@@ -1,0 +1,25 @@
+# Video processing
+ffmpeg-python==0.2.0
+moviepy==1.0.3
+
+# Audio processing and speech recognition
+pydub==0.25.1
+SpeechRecognition==3.9.0
+deepgram-sdk==2.11.0
+pyAudioAnalysis==0.3.14
+pyannote.audio==2.1.1
+#torch==2.0.1
+#torchaudio==2.0.2
+
+# NLP and text processing
+transformers==4.30.2
+spacy==3.5.3
+nltk==3.8.1
+
+# AI assistance and script generation
+openai==0.27.8
+
+# Utilities
+numpy==1.24.3
+tqdm==4.65.0
+pyyaml==6.0

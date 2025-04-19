@@ -1,0 +1,12 @@
+# Ignore virtual environment
+THVenv/
+
+# Ignore temporary video files
+*.mp4
+
+# Ignore other temporary or cache files
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+.env
