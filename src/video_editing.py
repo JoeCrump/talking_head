@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
 from moviepy import VideoFileClip, concatenate_videoclips, TextClip, CompositeVideoClip
 logger = logging.getLogger(__name__)
-from moviepy.video.fx import CrossFadeIn, CrossFadeOut
+from moviepy.video.fx import CrossFadeIn, CrossFadeOut, Crop
 
 
 def create_multiple_short_videos(
@@ -19,7 +19,7 @@ def create_multiple_short_videos(
     num_videos: int = 1,
     target_duration: int = 60,
     add_captions: bool = True,
-    aspect_ratio: str = "16:9"
+    aspect_ratio: str = "9:16"
 ) -> List[str]:
     """
     Create multiple short videos from the input video based on the script.
@@ -127,12 +127,61 @@ def _divide_segments_for_multiple_videos(segments: List[Dict[str, Any]], num_vid
     return [group for group in segment_groups if group]
 
 
+def _adjust_aspect_ratio(clip, aspect_ratio: str):
+    """
+    Adjust the aspect ratio of a video clip using letterboxing/pillarboxing.
+    This preserves the entire original content without cropping anything out.
+    """
+    # Parse the aspect ratio
+    try:
+        width_ratio, height_ratio = map(int, aspect_ratio.split(':'))
+        target_aspect = width_ratio / height_ratio
+    except (ValueError, ZeroDivisionError):
+        logger.warning(f"Invalid aspect ratio: {aspect_ratio}, using original")
+        return clip
+
+    # Calculate the current aspect ratio
+    current_aspect = clip.w / clip.h
+
+    # If they're close enough, no need to adjust
+    if abs(current_aspect - target_aspect) < 0.01:
+        return clip
+
+    # Calculate the new dimensions that preserve the content
+    if target_aspect > current_aspect:
+        # Target is wider than original, add pillarboxing (vertical bars)
+        new_height = clip.h
+        new_width = int(new_height * target_aspect)
+    else:
+        # Target is taller than original, add letterboxing (horizontal bars)
+        new_width = clip.w
+        new_height = int(new_width / target_aspect)
+
+    # Create a background canvas with the new dimensions
+    from moviepy import ColorClip
+
+    # Create a black background of the target size
+    bg_color = (0, 0, 0)
+    bg = ColorClip(size=(new_width, new_height), color=bg_color)
+    bg = bg.with_duration(clip.duration)
+
+    # Position the original clip in the center of the new canvas
+    # The .set_position method centers the clip
+    clip_positioned = clip.with_position("center")
+
+    # Composite the original clip over the background
+    final_clip = CompositeVideoClip([bg, clip_positioned], size=(new_width, new_height))
+    final_clip.duration = clip.duration
+
+    return final_clip
+
+
 def create_short_video(
     input_path: str,
     output_path: str,
     script: Dict[str, Any],
     add_captions: bool = True,
-    aspect_ratio: str = "16:9"
+    aspect_ratio: str = "9:16"
 ) -> str:
     """
     Create a short video from the input video based on the script.
@@ -176,6 +225,7 @@ def create_short_video(
             clips = []
             for start_time, end_time, segment in segments_to_use:
                 clip = video.subclipped(start_time, end_time)  # Changed from subclipped to subclip
+                video.subclipped
 
                 # Add captions if enabled and text is available
                 # Before your if/elif block, initialize final_clip
@@ -186,8 +236,10 @@ def create_short_video(
                     txt_clip = TextClip(
                         font='/usr/share/fonts/open-sans/OpenSans-Regular.ttf',
                         text=segment['text'],
-                        font_size=30,
+                        font_size=15,
                         color='white',
+                        stroke_color='black',  # Add a stroke for better visibility
+                        stroke_width=3,
                         bg_color=(0, 0, 0, 128),
                         size=(int(clip.w * 0.9), None),
                         method='label',  # Changed from 'caption' to 'label'
@@ -200,7 +252,7 @@ def create_short_video(
                     txt_clip.duration = clip.duration
 
                     # Set position
-                    txt_clip.pos = lambda t: ('center', clip.h * 0.85)
+                    txt_clip.pos = lambda t: ('center', clip.h * 0.70)
 
                     # Create composite clip
                     final_clip = CompositeVideoClip([clip, txt_clip], size=clip.size)
@@ -267,42 +319,6 @@ def create_short_video(
         raise
 
 
-def _adjust_aspect_ratio(clip, aspect_ratio: str) -> VideoFileClip:
-    """Adjust the aspect ratio of a video clip."""
-    # Parse the aspect ratio
-    try:
-        width_ratio, height_ratio = map(int, aspect_ratio.split(':'))
-        target_aspect = width_ratio / height_ratio
-    except (ValueError, ZeroDivisionError):
-        logger.warning(f"Invalid aspect ratio: {aspect_ratio}, using original")
-        return clip
-
-    # Calculate the current aspect ratio
-    current_aspect = clip.w / clip.h
-
-    # If they're close enough, no need to adjust
-    if abs(current_aspect - target_aspect) < 0.01:
-        return clip
-
-    # Determine if we need to crop width or height
-    if current_aspect > target_aspect:
-        # Current video is wider than target, crop the width
-        new_width = int(clip.h * target_aspect)
-        x_center = clip.w // 2
-        return clip.crop(x1=x_center - new_width // 2,
-                          y1=0,
-                          width=new_width,
-                          height=clip.h)
-    else:
-        # Current video is taller than target, crop the height
-        new_height = int(clip.w / target_aspect)
-        y_center = clip.h // 2
-        return clip.crop(x1=0,
-                          y1=y_center - new_height // 2,
-                          width=clip.w,
-                          height=new_height)
-
-
 def add_transitions(clips: List[VideoFileClip], transition_type: str = "crossfade", transition_duration: float = 0.5) -> List[VideoFileClip]:
     """
     Add transitions between video clips.
@@ -331,6 +347,7 @@ def add_transitions(clips: List[VideoFileClip], transition_type: str = "crossfad
                 # Create and apply the CrossFadeIn effect
                 fade_in = CrossFadeIn(safe_duration)
                 clip = fade_in.copy().apply(clip)
+
 
         # Apply CrossFadeOut to all clips except the last one
         if i < len(clips) - 1 and transition_type == "crossfade":
