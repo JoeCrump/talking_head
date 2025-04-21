@@ -152,10 +152,16 @@ def _adjust_aspect_ratio(clip, aspect_ratio: str):
         # Target is wider than original, add pillarboxing (vertical bars)
         new_height = clip.h
         new_width = int(new_height * target_aspect)
+        # Ensure width is even
+        if new_width % 2 != 0:
+            new_width += 1
     else:
         # Target is taller than original, add letterboxing (horizontal bars)
         new_width = clip.w
         new_height = int(new_width / target_aspect)
+        # Ensure height is even
+        if new_height % 2 != 0:
+            new_height += 1
 
     # Create a background canvas with the new dimensions
     from moviepy import ColorClip
@@ -166,7 +172,6 @@ def _adjust_aspect_ratio(clip, aspect_ratio: str):
     bg = bg.with_duration(clip.duration)
 
     # Position the original clip in the center of the new canvas
-    # The .set_position method centers the clip
     clip_positioned = clip.with_position("center")
 
     # Composite the original clip over the background
@@ -308,7 +313,14 @@ def create_short_video(
                 audio_codec='aac',
                 temp_audiofile=f"{output_path}.temp-audio.m4a",
                 remove_temp=True,
-                fps=24
+                fps=24,
+                preset='fast',  # Use 'fast' preset for better compatibility
+                ffmpeg_params=[
+                    '-pix_fmt', 'yuv420p',  # Standard pixel format for web compatibility
+                    '-profile:v', 'baseline',  # Most compatible H.264 profile
+                    '-level', '3.0',  # Compatible level
+                    '-movflags', '+faststart'  # Allows video to start playing before fully downloaded
+                ]
             )
 
             logger.info(f"Short video created: {output_path}, duration: {final_clip.duration:.2f}s")

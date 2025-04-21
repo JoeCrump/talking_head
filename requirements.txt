@@ -1,25 +1,21 @@
-# Video processing
-ffmpeg-python==0.2.0
+# Core web framework
+fastapi==0.110.0
+uvicorn==0.29.0
+gunicorn==21.2.0
+python-multipart==0.0.9
+pydantic==1.10.13
+
+# Video processing essentials
 moviepy==1.0.3
+imageio-ffmpeg==0.4.9
 
-# Audio processing and speech recognition
-pydub==0.25.1
-SpeechRecognition==3.9.0
-deepgram-sdk==2.11.0
-pyAudioAnalysis==0.3.14
-pyannote.audio==2.1.1
-#torch==2.0.1
-#torchaudio==2.0.2
+# API and cloud services
+openai>=1.0.0
+requests>=2.28.0
+python-dotenv==1.0.0
 
-# NLP and text processing
-transformers==4.30.2
-spacy==3.5.3
-nltk==3.8.1
-
-# AI assistance and script generation
-openai==0.27.8
-
-# Utilities
+# Utils
 numpy==1.24.3
 tqdm==4.65.0
-pyyaml==6.0
+PyYAML==6.0
+regex==2024.11.6
