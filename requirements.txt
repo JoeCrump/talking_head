@@ -8,6 +8,7 @@ pydantic==1.10.13
 # Video processing essentials
 moviepy==1.0.3
 imageio-ffmpeg==0.4.9
+ffmpeg-python==0.2.0  
 
 # API and cloud services
 openai>=1.0.0
