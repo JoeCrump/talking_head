@@ -6,7 +6,7 @@ python-multipart==0.0.9
 pydantic==1.10.13
 
 # Video processing essentials
-moviepy==1.0.3
+moviepy==2.1.2
 imageio-ffmpeg==0.4.9
 ffmpeg-python==0.2.0  
 
